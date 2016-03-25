@@ -39,7 +39,8 @@ MAV_FRAME AC_PrecLand_Companion::get_frame_of_reference()
 //  returns true if angles are available, false if not (i.e. no target)
 //  x_angle_rad : roll direction, positive = target is to right (looking down)
 //  y_angle_rad : pitch direction, postiive = target is forward (looking down)
-bool AC_PrecLand_Companion::get_angle_to_target(float &x_angle_rad, float &y_angle_rad)
+//  size_rad : target's size in radians
+bool AC_PrecLand_Companion::get_angle_to_target(float &x_angle_rad, float &y_angle_rad, float &size_rad)
 {
     if (_new_estimate){
         x_angle_rad = _angle_to_target.x;

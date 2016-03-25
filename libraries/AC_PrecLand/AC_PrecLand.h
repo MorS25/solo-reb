@@ -66,6 +66,7 @@ public:
     const Vector2f& last_bf_angle_to_target() const { return _angle_to_target; }
     const Vector2f& last_ef_angle_to_target() const { return _ef_angle_to_target; }
     const Vector3f& last_target_pos_offset() const { return _target_pos_offset; }
+    float last_size_rad() const { return _size_rad; }
 
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
@@ -92,7 +93,7 @@ private:
     AP_Float                    _speed_xy;          // maximum horizontal speed in cm/s
 
     // internal variables
-    float                       _dt;                // time difference (in seconds) between calls from the main program
+    //float                       _dt;                // time difference (in seconds) between calls from the main program
 
     // output from sensor (stored for logging)
     Vector2f                    _angle_to_target;   // last raw sensor angle to target
@@ -101,6 +102,7 @@ private:
     // output from controller
     bool                        _have_estimate;     // true if we have a recent estimated position offset
     Vector3f                    _target_pos_offset; // estimate target position offset from vehicle in earth-frame
+    float                       _size_rad;          // target's apparent size in the frame in radians
 
     // backend state
     struct precland_state {

@@ -60,7 +60,8 @@ AC_PrecLand::AC_PrecLand(const AP_AHRS& ahrs, const AP_InertialNav& inav, float 
     _ahrs(ahrs),
     _inav(inav),
     _pi_vel_xy(PRECLAND_P, PRECLAND_I, PRECLAND_IMAX, PRECLAND_FILT_HZ, dt),
-    _dt(dt),
+    //_dt(dt),
+    _size_rad(0.0f),
     _have_estimate(false),
     _backend(NULL)
 {
@@ -156,7 +157,7 @@ void AC_PrecLand::calc_angles_and_pos(float alt_above_terrain_cm)
     }
 
     // get angles to target from backend
-    if (!_backend->get_angle_to_target(_angle_to_target.x, _angle_to_target.y)) {
+    if (!_backend->get_angle_to_target(_angle_to_target.x, _angle_to_target.y, _size_rad)) {
         _have_estimate = false;
         return;
     }

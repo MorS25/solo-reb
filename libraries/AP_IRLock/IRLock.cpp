@@ -35,3 +35,19 @@ bool IRLock::get_angle_to_target(float &x_angle_rad, float &y_angle_rad) const
     y_angle_rad = _target_info[0].angle_y;
     return true;
 }
+
+// get_angle_to_target - retrieve body frame x and y angles and size (in radians) to target
+//  returns true if angles are available, false if not (i.e. no target)
+bool IRLock::get_angle_to_target(float &x_angle_rad, float &y_angle_rad, float &size_rad) const
+{
+    // return false if we have no target
+    if (_num_targets == 0) {
+        return false;
+    }
+
+    // use data from first object
+    x_angle_rad = _target_info[0].angle_x;
+    y_angle_rad = _target_info[0].angle_y;
+    size_rad = pythagorous2(_target_info[0].size_x, _target_info[0].size_y);
+    return true;
+}

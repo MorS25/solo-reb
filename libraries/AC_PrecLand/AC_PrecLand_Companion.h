@@ -31,7 +31,8 @@ public:
     //  returns true if angles are available, false if not (i.e. no target)
     //  x_angle_rad : roll direction, positive = target is to right (looking down)
     //  y_angle_rad : pitch direction, postiive = target is forward (looking down)
-    bool get_angle_to_target(float &x_angle_rad, float &y_angle_rad);
+    //  size_rad : apparently size of target in radians
+    bool get_angle_to_target(float &x_angle_rad, float &y_angle_rad, float &size_rad);
 
     // handle_msg - parses a mavlink message from the companion computer
     void handle_msg(mavlink_message_t* msg);
@@ -44,5 +45,6 @@ private:
     float               _distance_to_target;    // distance from the camera to target in meters
     uint64_t            _timestamp_us;          // timestamp when the image was captured(synced via UAVCAN)
     bool                _new_estimate;          // true if new data from the camera has been received
+    float               _size_rad;              // apparent size of target in radians
 };
 #endif	// __AC_PRECLAND_COMPANION_H__

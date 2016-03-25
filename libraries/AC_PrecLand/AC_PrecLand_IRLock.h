@@ -35,7 +35,8 @@ public:
     //  returns true if angles are available, false if not (i.e. no target)
     //  x_angle_rad : body-frame roll direction, positive = target is to right (looking down)
     //  y_angle_rad : body-frame pitch direction, postiive = target is forward (looking down)
-    bool get_angle_to_target(float &x_angle_rad, float &y_angle_rad);
+    //  size_rad : target's size in radians
+    bool get_angle_to_target(float &x_angle_rad, float &y_angle_rad, float &size_rad);
 
     // handle_msg - parses a mavlink message from the companion computer
     void handle_msg(mavlink_message_t* msg) { /* do nothing */ }
