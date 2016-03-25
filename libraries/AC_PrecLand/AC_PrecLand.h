@@ -58,6 +58,12 @@ public:
     // get_target_shift - returns 3D vector of earth-frame position adjustments to target
     Vector3f get_target_shift(const Vector3f& orig_target);
 
+    // calc_angles_and_pos - converts sensor's body-frame angles to earth-frame angles and position estimate
+    //  body-frame angles stored in _bf_angle_to_target
+    //  earth-frame angles stored in _ef_angle_to_target
+    //  position estimate is stored in _target_pos
+    Vector3f report_angles_and_pos(float alt_above_terrain_cm);
+
     // handle_msg - Process a LANDING_TARGET mavlink message
     void handle_msg(mavlink_message_t* msg);
 
