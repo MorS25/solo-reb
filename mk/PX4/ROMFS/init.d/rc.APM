@@ -479,6 +479,11 @@ fi
 if irlock start
 then
     echo "irlock started"
+else
+    if irlock -b 2 start
+    then
+        echo "irlock started"
+    fi
 fi
 
 echo Starting ArduPilot $deviceA $deviceC $deviceD

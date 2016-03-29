@@ -177,11 +177,11 @@ void Copter::land_gps_run()
     	// record desired climb rate for logging
     	desired_climb_rate = cmb_rate;
     } else {
-    	cmb_rate = 50.0f;
+    	//cmb_rate = 50.0f;
     	pos_control.set_alt_target_from_climb_rate(cmb_rate, G_Dt, false);
     	//pos_control.add_takeoff_climb_rate(takeoff_climb_rate, G_Dt);
     	// record desired climb rate for logging
-    	desired_climb_rate = cmb_rate;
+    	desired_climb_rate = -2*cmb_rate;
     }
     pos_control.update_z_controller();
 }
