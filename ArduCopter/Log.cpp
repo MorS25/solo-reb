@@ -697,6 +697,7 @@ struct PACKED log_Precland {
 //    float size_rad;
     float pos_x;
     float pos_y;
+    float pos_z;
 };
 
 // Write an optical flow packet

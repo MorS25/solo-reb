@@ -179,17 +179,17 @@ void AC_PrecLand::calc_angles_and_pos(float alt_above_terrain_cm)
         return;
     }
 
-    float x_rad;
-    float y_rad;
+    //float x_rad;
+    //float y_rad;
 
     if(_backend->get_frame_of_reference() == MAV_FRAME_LOCAL_NED){
         //don't subtract vehicle lean angles
-        x_rad = _angle_to_target.x;
-        y_rad = -_angle_to_target.y;
+        float x_rad = _angle_to_target.x;
+        float y_rad = -_angle_to_target.y;
     }else{ // assume MAV_FRAME_BODY_NED (i.e. a hard-mounted sensor)
         // subtract vehicle lean angles
-        x_rad = _angle_to_target.x - _ahrs.roll;
-        y_rad = -_angle_to_target.y + _ahrs.pitch;
+    	float x_rad = _angle_to_target.x - _ahrs.roll;
+    	float y_rad = -_angle_to_target.y + _ahrs.pitch;
     }
 
     // DON'T rotate to earth-frame angles
@@ -219,11 +219,14 @@ void AC_PrecLand::calc_angles_and_pos(float alt_above_terrain_cm)
 //  position estimate is stored in _target_pos
 const Vector3f& AC_PrecLand::calc_angles_and_pos_out(float alt_above_terrain_cm, float p_gain, float d_gain_temp)
 {
-	float i_max = _pi_precland_xy.imax(); //
-	float i_gain = _pi_precland_xy.kI(); // set to 0; default is 1
+//	float i_max = _pi_precland_xy.imax(); //
+	float i_max = 0.0f;
+//	float i_gain = _pi_precland_xy.kI(); // set to 0; default is 1
+	float i_gain = 0.0f;
 //	float d_gain = _pi_precland_xy.filt_hz(); // set to 100; previously 25
 	float d_gain = 400.0f*d_gain_temp;
-	float ctrl_max = _pi_precland_xy.imax(); // set to 2 (degrees)
+//	float ctrl_max = _pi_precland_xy.imax(); // set to 2 (degrees)
+	float ctrl_max = 400.0f;
 //	float p_gain = _pi_precland_xy.kP();
 
     // exit immediately if not enabled
@@ -235,7 +238,7 @@ const Vector3f& AC_PrecLand::calc_angles_and_pos_out(float alt_above_terrain_cm,
         return _target_pos_offset;
     }
 
-    if (!_backend->get_angle_to_target(_angle_to_target.x, _angle_to_target.y) && _missed_target_frames > 50) {
+    if (!_backend->get_angle_to_target(_angle_to_target.x, _angle_to_target.y, _size_rad) && _missed_target_frames > 50) {
         _have_estimate = false;
         _missed_target_frames = 0;
         _target_pos_offset.x = 0.0f;
@@ -249,7 +252,7 @@ const Vector3f& AC_PrecLand::calc_angles_and_pos_out(float alt_above_terrain_cm,
     }
 
     // get angles to target from backend
-    if (!_backend->get_angle_to_target(_angle_to_target.x, _angle_to_target.y)) {
+    if (!_backend->get_angle_to_target(_angle_to_target.x, _angle_to_target.y, _size_rad)) {
         _have_estimate = false;
         _missed_target_frames++;
         //_target_pos_offset.x = 0.0f;

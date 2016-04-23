@@ -116,6 +116,7 @@ private:
     float					  _d_term_y_avg;
     float                     _integrator_roll_offset;
     float                     _integrator_pitch_offset;
+    float					  _size_rad;
 
     // output from controller
     Vector3f                    _desired_vel;       // desired velocity towards target in earth-frame
