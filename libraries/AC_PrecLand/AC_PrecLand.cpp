@@ -122,6 +122,23 @@ void AC_PrecLand::update(float alt_above_terrain_cm)
     }
 }
 
+// INITIALISE
+void AC_PrecLand::set_initial_vals()
+{
+	_prev_bf_roll_pos_offset = 0.0f;
+	_prev_bf_pitch_pos_offset = 0.0f;
+	_target_pos_offset.x = 0.0f;
+	_target_pos_offset.y = 0.0f;
+	_target_pos_offset.z = 0.0f;
+	_missed_target_frames = 0;
+	_integrator_roll_offset = 0.0f;
+	_integrator_pitch_offset = 0.0f;
+	_d_term_x = 0.0f;
+	_d_term_y = 0.0f;
+	_d_term_x_avg = 0.0f;
+	_d_term_y_avg = 0.0f;
+}
+
 // get_target_shift - returns 3D vector of earth-frame position adjustments to target
 Vector3f AC_PrecLand::get_target_shift(const Vector3f &orig_target)
 {
@@ -175,55 +192,170 @@ void AC_PrecLand::calc_angles_and_pos(float alt_above_terrain_cm)
         y_rad = -_angle_to_target.y + _ahrs.pitch;
     }
 
-    // rotate to earth-frame angles
-    _ef_angle_to_target.x = y_rad*_ahrs.cos_yaw() - x_rad*_ahrs.sin_yaw();
-    _ef_angle_to_target.y = y_rad*_ahrs.sin_yaw() + x_rad*_ahrs.cos_yaw();
+    // DON'T rotate to earth-frame angles
+    //_ef_angle_to_target.x = y_rad*_ahrs.cos_yaw() - x_rad*_ahrs.sin_yaw();
+    //_ef_angle_to_target.y = y_rad*_ahrs.sin_yaw() + x_rad*_ahrs.cos_yaw();
 
     // get current altitude (constrained to no lower than 1cm)
     float alt = MAX(alt_above_terrain_cm, 1.0f);
 
+    // RE-PURPOSE this logged variable: Target Offset in roll/pitch directions
+    //_ef_angle_to_target.x = alt*tanf(x_rad);
+    //_ef_angle_to_target.y = alt*tanf(y_rad);
+
+    /// DON'T update these here
     // convert earth-frame angles to earth-frame position offset
-    _target_pos_offset.x = alt*tanf(_ef_angle_to_target.x);
-    _target_pos_offset.y = alt*tanf(_ef_angle_to_target.y);
-    _target_pos_offset.z = 0;  // not used
+    ///_target_pos_offset.x = alt*tanf(_ef_angle_to_target.x);
+    ///_target_pos_offset.y = alt*tanf(_ef_angle_to_target.y);
+    ///_target_pos_offset.z = 0;  // not used
 
     _have_estimate = true;
 }
 
-// calc_angles_and_pos - converts sensor's body-frame angles to earth-frame angles and position estimate
-//  body-frame angles stored in _bf_angle_to_target
+// calc_angles_and_pos - reports back bf target pos
+//  converts sensor's body-frame angles to earth-frame angles and position estimate
+//  raw sensor angles stored in _angle_to_target (might be in earth frame, or maybe body frame)
 //  earth-frame angles stored in _ef_angle_to_target
 //  position estimate is stored in _target_pos
-Vector3f AC_PrecLand::report_angles_and_pos(float alt_above_terrain_cm)
+const Vector3f& AC_PrecLand::calc_angles_and_pos_out(float alt_above_terrain_cm, float p_gain, float d_gain_temp)
 {
-    Vector3f offset_report; // default initialised to zero
+	float i_max = _pi_precland_xy.imax(); //
+	float i_gain = _pi_precland_xy.kI(); // set to 0; default is 1
+//	float d_gain = _pi_precland_xy.filt_hz(); // set to 100; previously 25
+	float d_gain = 400.0f*d_gain_temp;
+	float ctrl_max = _pi_precland_xy.imax(); // set to 2 (degrees)
+//	float p_gain = _pi_precland_xy.kP();
 
-    // do not shift target if not enabled or no position estimate
-    //if (_backend == NULL || !_have_estimate) {
-    //    return offset_report;
-    //}
-
-    /*
-	// exit immediately if not enabled
+    // exit immediately if not enabled
     if (_backend == NULL) {
         _have_estimate = false;
-        return offset_report;
+        _target_pos_offset.x = 0.0f;
+        _target_pos_offset.y = 0.0f;
+        _target_pos_offset.z = 0.0f;
+        return _target_pos_offset;
     }
 
-    // get body-frame angles to target from backend
-    if (!_backend->get_angle_to_target(_bf_angle_to_target.x, _bf_angle_to_target.y)) {
+    if (!_backend->get_angle_to_target(_angle_to_target.x, _angle_to_target.y) && _missed_target_frames > 50) {
         _have_estimate = false;
-        return offset_report;
+        _missed_target_frames = 0;
+        _target_pos_offset.x = 0.0f;
+        _target_pos_offset.y = 0.0f;
+        _target_pos_offset.z = 0.0f;
+        _d_term_x_avg = 0.0f;
+        _d_term_y_avg = 0.0f;
+        _integrator_roll_offset = 0.0f;
+        _integrator_pitch_offset = 0.0f;
+        return _target_pos_offset;
     }
-    */
 
-    offset_report.x = _target_pos_offset.x;
-    offset_report.y = _target_pos_offset.y;
-    offset_report.z = 0;  // not used
+    // get angles to target from backend
+    if (!_backend->get_angle_to_target(_angle_to_target.x, _angle_to_target.y)) {
+        _have_estimate = false;
+        _missed_target_frames++;
+        //_target_pos_offset.x = 0.0f;
+        //_target_pos_offset.y = 0.0f;
+        //_target_pos_offset.z = 0.0f;
+        return _target_pos_offset;
+    }
 
-    //_have_estimate = true;
+    float x_rad;
+    float y_rad;
+    _missed_target_frames = 0;
 
-    return offset_report;
+    if(_backend->get_frame_of_reference() == MAV_FRAME_LOCAL_NED){
+        //don't subtract vehicle lean angles
+        x_rad = _angle_to_target.x;
+        y_rad = -_angle_to_target.y;
+    }else{ // assume MAV_FRAME_BODY_NED (i.e. a hard-mounted sensor)
+        // subtract vehicle lean angles
+        x_rad = _angle_to_target.x - _ahrs.roll;
+        y_rad = -_angle_to_target.y + _ahrs.pitch;
+    }
+
+    // DON'T rotate to earth-frame angles
+    //_ef_angle_to_target.x = y_rad*_ahrs.cos_yaw() - x_rad*_ahrs.sin_yaw();
+    //_ef_angle_to_target.y = y_rad*_ahrs.sin_yaw() + x_rad*_ahrs.cos_yaw();
+
+    // get current altitude (constrained to no lower than 20cm)
+    float alt = MAX(alt_above_terrain_cm, 20.0f);
+
+    // RE-PURPOSE this logged variable: Target Offset in roll/pitch directions
+    //_ef_angle_to_target.x = alt*tanf(x_rad);
+    //_ef_angle_to_target.y = alt*tanf(y_rad);
+
+    /// RE-PURPOSE this logged variable: Control in roll/pitch directions (centi-degrees)
+    // convert earth-frame angles to earth-frame position offset
+    ///_target_pos_offset.x = alt*tanf(_ef_angle_to_target.x);
+    ///_target_pos_offset.y = alt*tanf(_ef_angle_to_target.y);
+    ///_target_pos_offset.z = 0;  // not used
+
+    // OUTPUT
+    float bf_roll_pos_offset = alt*tanf(x_rad);
+    float bf_pitch_pos_offset = alt*tanf(y_rad);
+
+    //_target_pos_offset.x = p_gain*bf_roll_pos_offset;
+    //_target_pos_offset.y = -p_gain*bf_pitch_pos_offset;
+    //_target_pos_offset.z = 0.0f;
+
+    _d_term_x = d_gain*(bf_roll_pos_offset-_prev_bf_roll_pos_offset);
+    _d_term_y = d_gain*(bf_pitch_pos_offset-_prev_bf_pitch_pos_offset);
+    // PSEUDO-AVERAGING
+    _d_term_x_avg = (0.005f*_d_term_x) + (1.0f - 0.005f)*_d_term_x_avg;
+    _d_term_y_avg = (0.005f*_d_term_y) + (1.0f - 0.005f)*_d_term_y_avg;
+    // LOG d_term
+    _ef_angle_to_target.x = bf_roll_pos_offset;
+    _ef_angle_to_target.y = bf_pitch_pos_offset;
+
+    // ADD D-control
+    _target_pos_offset.x = p_gain*bf_roll_pos_offset + _d_term_x_avg;
+    _target_pos_offset.y = -p_gain*bf_pitch_pos_offset - _d_term_y_avg;
+    _target_pos_offset.z = _d_term_y_avg;
+
+    // PID, ADD I-control
+    _integrator_roll_offset += bf_roll_pos_offset*i_gain;
+    _integrator_pitch_offset += bf_pitch_pos_offset*i_gain;
+
+    if (_integrator_roll_offset > i_max) {
+    	_integrator_roll_offset = i_max;
+    }
+    if (_integrator_pitch_offset > i_max) {
+    	_integrator_pitch_offset = i_max;
+    }
+    if (_integrator_roll_offset < -i_max) {
+    	_integrator_roll_offset = -i_max;
+    }
+    if (_integrator_pitch_offset < -i_max) {
+    	_integrator_pitch_offset = -i_max;
+    }
+
+    // PID, ADD I-control
+//    _target_pos_offset.x = p_gain*bf_roll_pos_offset +
+//    		_d_term_x + _integrator_roll_offset;
+//    _target_pos_offset.y = -p_gain*bf_pitch_pos_offset -
+//    		_d_term_y - _integrator_pitch_offset;
+//    _target_pos_offset.z = 0.0f;
+
+    // CTRL Max
+    if (_target_pos_offset.x > ctrl_max) {
+    	_target_pos_offset.x = ctrl_max;
+        }
+    if (_target_pos_offset.y > ctrl_max) {
+    	_target_pos_offset.y = ctrl_max;
+    }
+    if (_target_pos_offset.y < -ctrl_max) {
+    	_target_pos_offset.y = -ctrl_max;
+        }
+    if (_target_pos_offset.x < -ctrl_max) {
+    	_target_pos_offset.x = -ctrl_max;
+    }
+
+    // STORE previous value for D-control application
+    _prev_bf_roll_pos_offset = bf_roll_pos_offset;
+    _prev_bf_pitch_pos_offset = bf_pitch_pos_offset;
+
+    return _target_pos_offset;
+
+    _have_estimate = true;
 }
 
 // handle_msg - Process a LANDING_TARGET mavlink message

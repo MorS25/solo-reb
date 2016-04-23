@@ -131,6 +131,7 @@ void Copter::land_gps_run()
     // process roll, pitch inputs
     wp_nav.set_pilot_desired_acceleration(roll_control, pitch_control);
 
+    /*
 #if PRECISION_LANDING == ENABLED
     // run precision landing
     if (!ap.land_repo_active) {
@@ -155,6 +156,7 @@ void Copter::land_gps_run()
         }
     }
 #endif
+     */
 
     // run loiter controller
     wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
