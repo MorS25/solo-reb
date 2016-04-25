@@ -49,6 +49,9 @@ public:
     // init - perform any required initialisation of landing controllers
     void init();
 
+    // INITIALIZE
+    void set_initial_vals();
+
     // healthy - returns true if precision landing is healthy
     bool healthy() { return _backend_state.healthy; }
 
@@ -57,6 +60,8 @@ public:
 
     // get_target_shift - returns 3D vector of earth-frame position adjustments to target
     Vector3f get_target_shift(const Vector3f& orig_target);
+
+    const Vector3f& calc_angles_and_pos_out(float alt_above_terrain_cm, float p_gain, float d_gain_temp);
 
     // handle_msg - Process a LANDING_TARGET mavlink message
     void handle_msg(mavlink_message_t* msg);
@@ -92,7 +97,7 @@ private:
     AP_Float                    _speed_xy;          // maximum horizontal speed in cm/s
 
     // internal variables
-    float                       _dt;                // time difference (in seconds) between calls from the main program
+    //float                       _dt;                // time difference (in seconds) between calls from the main program
 
     // output from sensor (stored for logging)
     Vector2f                    _angle_to_target;   // last raw sensor angle to target
@@ -101,6 +106,7 @@ private:
     // output from controller
     bool                        _have_estimate;     // true if we have a recent estimated position offset
     Vector3f                    _target_pos_offset; // estimate target position offset from vehicle in earth-frame
+    float						_store_ang_x;
 
     // backend state
     struct precland_state {

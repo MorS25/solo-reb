@@ -27,6 +27,9 @@ bool Copter::althold_init(bool ignore_checks)
     // stop takeoff if running
     takeoff_stop();
 
+    // INITIALISE
+    precland.set_initial_vals();
+
     return true;
 }
 
@@ -44,9 +47,29 @@ void Copter::althold_run()
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
 
-    // get pilot desired lean angles
-    float target_roll, target_pitch;
-    get_pilot_desired_lean_angles(channel_roll->control_in, channel_pitch->control_in, target_roll, target_pitch, attitude_control.get_althold_lean_angle_max());
+    // NEW METHOD
+    float limit_rollpitch = 1000.0f;
+    float u_ctrl_roll, u_ctrl_pitch;
+    Vector3f desval;
+    if (sonar_enabled && (sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
+        // if sonar is ok, use surface tracking
+    	desval = precland.calc_angles_and_pos_out(sonar_alt, g.acro_rp_p, g.pi_vel_xy.kP());
+    } else {
+    	desval = precland.calc_angles_and_pos_out(current_loc.alt, g.acro_rp_p, g.pi_vel_xy.kP());
+    }
+    u_ctrl_roll = desval.x;
+    u_ctrl_pitch = desval.y;
+
+    // IF pilot overrides by applying pitch/roll
+   	float target_roll, target_pitch;
+    if (channel_roll->control_in != 0 || channel_pitch->control_in != 0) {
+    	// get pilot desired lean angles
+    	get_pilot_desired_lean_angles(channel_roll->control_in, channel_pitch->control_in, target_roll, target_pitch, attitude_control.get_althold_lean_angle_max());
+    // ELSE apply P controller (centi-degrees)
+    } else{
+    	target_roll = constrain_float(u_ctrl_roll,-limit_rollpitch,limit_rollpitch);
+    	target_pitch = constrain_float(u_ctrl_pitch,-limit_rollpitch,limit_rollpitch);
+    }
 
     // get pilot's desired yaw rate
     float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
