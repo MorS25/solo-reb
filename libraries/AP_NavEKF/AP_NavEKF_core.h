@@ -174,7 +174,7 @@ public:
 
     // Return estimated magnetometer offsets
     // Return true if magnetometer offsets are valid
-    bool getMagOffsets(Vector3f &magOffsets) const;
+    bool getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const;
 
     // Return the last calculated latitude, longitude and height in WGS-84
     // If a calculated location isn't available, return a raw GPS measurement
@@ -186,12 +186,6 @@ public:
     // All NED positions calculated by the filter are relative to this location
     // Returns false if the origin has not been set
     bool getOriginLLH(struct Location &loc) const;
-
-    // set the latitude and longitude and height used to set the NED origin
-    // All NED positions calcualted by the filter will be relative to this location
-    // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
-    // Returns false if the filter has rejected the attempt to set the origin
-    bool setOriginLLH(struct Location &loc);
 
     // return estimated height above ground level
     // return false if ground height is not being estimated.

@@ -12,101 +12,48 @@
   APM_BUILD_DIRECTORY is taken from the main vehicle directory name
   where the code is built.
  */
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-// copter defaults
-#define VELNE_NOISE_DEFAULT     0.5f
-#define VELD_NOISE_DEFAULT      0.7f
-#define POSNE_NOISE_DEFAULT     1.0f
-#define ALT_NOISE_DEFAULT       5.0f
-#define MAG_NOISE_DEFAULT       0.05f
-#define GYRO_PNOISE_DEFAULT     0.001f
-#define ACC_PNOISE_DEFAULT      0.25f
-#define GBIAS_PNOISE_DEFAULT    7.0E-05f
-#define ABIAS_PNOISE_DEFAULT    1.0E-04f
-#define MAG_PNOISE_DEFAULT      2.5E-02f
-#define VEL_GATE_DEFAULT        200
-#define POS_GATE_DEFAULT        300
-#define HGT_GATE_DEFAULT        300
-#define MAG_GATE_DEFAULT        300
-#define MAG_CAL_DEFAULT         3
-#define GLITCH_RADIUS_DEFAULT   25
-#define FLOW_MEAS_DELAY         10
-#define FLOW_NOISE_DEFAULT      0.25f
-#define FLOW_GATE_DEFAULT       300
-#define GSCALE_PNOISE_DEFAULT   3.0E-03f
-#define CHECK_SCALER_DEFAULT    100
 
-#elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
-// rover defaults
-#define VELNE_NOISE_DEFAULT     0.5f
-#define VELD_NOISE_DEFAULT      0.7f
-#define POSNE_NOISE_DEFAULT     1.0f
-#define ALT_NOISE_DEFAULT       2.0f
-#define MAG_NOISE_DEFAULT       0.05f
-#define GYRO_PNOISE_DEFAULT     0.001f
-#define ACC_PNOISE_DEFAULT      0.25f
-#define GBIAS_PNOISE_DEFAULT    7.0E-05f
-#define ABIAS_PNOISE_DEFAULT    1.0E-04f
-#define MAG_PNOISE_DEFAULT      2.5E-02f
-#define VEL_GATE_DEFAULT        200
-#define POS_GATE_DEFAULT        300
-#define HGT_GATE_DEFAULT        300
-#define MAG_GATE_DEFAULT        300
-#define MAG_CAL_DEFAULT         2
-#define GLITCH_RADIUS_DEFAULT   25
-#define FLOW_MEAS_DELAY         10
-#define FLOW_NOISE_DEFAULT      0.25f
-#define FLOW_GATE_DEFAULT       300
-#define GSCALE_PNOISE_DEFAULT   3.0E-03f
-#define CHECK_SCALER_DEFAULT    100
+#define VELNE_NOISE_DEFAULT       0.5f
+#define VELD_NOISE_DEFAULT        0.7f
+#define POSNE_NOISE_DEFAULT       0.5f
+#define MAG_NOISE_DEFAULT         0.05f
+#define GYRO_PNOISE_DEFAULT       0.025f
+#define ACC_PNOISE_DEFAULT        0.25f
+#define ABIAS_PNOISE_DEFAULT      3.0E-05f
+#define MAG_BODY_PNOISE_DEFAULT   1.25E-03f
+#define MAG_EARTH_PNOISE_DEFAULT  2.5E-03f
+#define VEL_GATE_DEFAULT          300
+#define POS_GATE_DEFAULT          300
+#define GLITCH_RADIUS_DEFAULT     25
+#define FLOW_MEAS_DELAY           10
+#define FLOW_NOISE_DEFAULT        0.25f
+#define FLOW_GATE_DEFAULT         300
+#define GSCALE_PNOISE_DEFAULT     3.0E-04f
+#define CHECK_SCALER_DEFAULT      100
+
+#if APM_BUILD_TYPE(APM_BUILD_APMrover2)
+// rover-specfic defaults
+#define GBIAS_PNOISE_DEFAULT      1.75E-06f
+#define MAG_CAL_DEFAULT           2
+#define ALT_NOISE_DEFAULT         2.0f
+#define HGT_GATE_DEFAULT          300
+#define MAG_GATE_DEFAULT          300
 
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-// plane defaults
-#define VELNE_NOISE_DEFAULT     0.5f
-#define VELD_NOISE_DEFAULT      0.7f
-#define POSNE_NOISE_DEFAULT     1.0f
-#define ALT_NOISE_DEFAULT       5.0f
-#define MAG_NOISE_DEFAULT       0.05f
-#define GYRO_PNOISE_DEFAULT     0.001f
-#define ACC_PNOISE_DEFAULT      0.25f
-#define GBIAS_PNOISE_DEFAULT    7.0E-05f
-#define ABIAS_PNOISE_DEFAULT    1.0E-04f
-#define MAG_PNOISE_DEFAULT      2.5E-02f
-#define VEL_GATE_DEFAULT        200
-#define POS_GATE_DEFAULT        300
-#define HGT_GATE_DEFAULT        400
-#define MAG_GATE_DEFAULT        200
-#define MAG_CAL_DEFAULT         0
-#define GLITCH_RADIUS_DEFAULT   25
-#define FLOW_MEAS_DELAY         10
-#define FLOW_NOISE_DEFAULT      0.25f
-#define FLOW_GATE_DEFAULT       300
-#define GSCALE_PNOISE_DEFAULT   3.0E-03f
-#define CHECK_SCALER_DEFAULT    150
+// plane-specific defaults
+#define GBIAS_PNOISE_DEFAULT      3.5E-06f
+#define MAG_CAL_DEFAULT           0
+#define ALT_NOISE_DEFAULT         1.0f
+#define HGT_GATE_DEFAULT          400
+#define MAG_GATE_DEFAULT          200
 
 #else
-// build type not specified, use copter defaults
-#define VELNE_NOISE_DEFAULT     0.5f
-#define VELD_NOISE_DEFAULT      0.7f
-#define POSNE_NOISE_DEFAULT     1.0f
-#define ALT_NOISE_DEFAULT       5.0f
-#define MAG_NOISE_DEFAULT       0.05f
-#define GYRO_PNOISE_DEFAULT     0.001f
-#define ACC_PNOISE_DEFAULT      0.25f
-#define GBIAS_PNOISE_DEFAULT    3.5E-05f
-#define ABIAS_PNOISE_DEFAULT    1.0E-04f
-#define MAG_PNOISE_DEFAULT      2.5E-02f
-#define VEL_GATE_DEFAULT        200
-#define POS_GATE_DEFAULT        300
-#define HGT_GATE_DEFAULT        300
-#define MAG_GATE_DEFAULT        300
-#define MAG_CAL_DEFAULT         3
-#define GLITCH_RADIUS_DEFAULT   25
-#define FLOW_MEAS_DELAY         10
-#define FLOW_NOISE_DEFAULT      0.25f
-#define FLOW_GATE_DEFAULT       300
-#define GSCALE_PNOISE_DEFAULT   3.0E-03f
-#define CHECK_SCALER_DEFAULT    100
+// copter-specific defaults
+#define GBIAS_PNOISE_DEFAULT      1.75E-06f
+#define MAG_CAL_DEFAULT           3
+#define ALT_NOISE_DEFAULT         2.0f
+#define HGT_GATE_DEFAULT          300
+#define MAG_GATE_DEFAULT          300
 
 #endif // APM_BUILD_DIRECTORY
 
@@ -372,13 +319,13 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Units: m/s/s
     AP_GROUPINFO("ABIAS_PNOISE", 28, NavEKF2, _accelBiasProcessNoise, ABIAS_PNOISE_DEFAULT),
 
-    // @Param: MAG_PNOISE
-    // @DisplayName: Magnetic field process noise (gauss/s)
-    // @Description: This state process noise controls the growth of magnetic field state error estimates. Increasing it makes magnetic field bias estimation faster and noisier.
+    // @Param: MAGB_PNOISE
+    // @DisplayName: Body magnetic field process noise (gauss/s)
+    // @Description: This state process noise controls the growth of body magnetic field state error estimates. Increasing it makes body magnetic field bias estimation faster and noisier.
     // @Range: 0.0001 0.01
     // @User: Advanced
     // @Units: gauss/s
-    AP_GROUPINFO("MAG_PNOISE", 29, NavEKF2, _magProcessNoise, MAG_PNOISE_DEFAULT),
+    AP_GROUPINFO("MAGB_PNOISE", 29, NavEKF2, _magBodyProcessNoise, MAG_BODY_PNOISE_DEFAULT),
 
     // @Param: WIND_PNOISE
     // @DisplayName: Wind velocity process noise (m/s^2)
@@ -426,6 +373,31 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @User: Advanced
     // @Units: m/s
     AP_GROUPINFO("NOAID_NOISE", 35, NavEKF2, _noaidHorizNoise, 10.0f),
+
+    // @Param: YAW_NOISE
+    // @DisplayName: Magnetomeer yaw measurement noise (rad)
+    // @Description: This is the RMS value of noise in the magnetometer yaw measurement which is used instead of 3-axis magnetometer observations if magnetic field learning is disabled. Increasing it reduces the weighting on the yaw measurement. This parameter is only used inflight.
+    // @Range: 0.1 0.5
+    // @Increment: 0.01
+    // @User: Advanced
+    // @Units: rad
+    AP_GROUPINFO("YAW_NOISE", 36, NavEKF2, _yawNoise, 0.3f),
+
+    // @Param: YAW_GATE
+    // @DisplayName: Magnetometer yaw measurement gate size
+    // @Description: This sets the percentage number of standard deviations applied to the magnetometer yaw measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted. This parameter is only used inflight.
+    // @Range: 100 1000
+    // @Increment: 25
+    // @User: Advanced
+    AP_GROUPINFO("YAW_GATE", 37, NavEKF2, _yawInnovGate, 260),
+
+    // @Param: MAGE_PNOISE
+    // @DisplayName: Earth magnetic field process noise (gauss/s)
+    // @Description: This state process noise controls the growth of earth magnetic field state error estimates. Increasing it makes earth magnetic field bias estimation faster and noisier.
+    // @Range: 0.0001 0.01
+    // @User: Advanced
+    // @Units: gauss/s
+    AP_GROUPINFO("MAGE_PNOISE", 38, NavEKF2, _magEarthProcessNoise, MAG_EARTH_PNOISE_DEFAULT),
 
     AP_GROUPEND
 };
@@ -651,7 +623,9 @@ void NavEKF2::getTiltError(int8_t instance, float &ang)
 void NavEKF2::resetGyroBias(void)
 {
     if (core) {
-        core[primary].resetGyroBias();
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].resetGyroBias();
+        }
     }
 }
 
@@ -660,12 +634,13 @@ void NavEKF2::resetGyroBias(void)
 // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
 // Returns true if the height datum reset has been performed
 // If using a range finder for height no reset is performed and it returns false
-bool NavEKF2::resetHeightDatum(void)
+void NavEKF2::resetHeightDatum(void)
 {
-    if (!core) {
-        return false;
+    if (core) {
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].resetHeightDatum();
+        }
     }
-    return core[primary].resetHeightDatum();
 }
 
 // Commands the EKF to not use GPS.
@@ -740,12 +715,21 @@ uint8_t NavEKF2::getActiveMag(int8_t instance)
 
 // Return estimated magnetometer offsets
 // Return true if magnetometer offsets are valid
-bool NavEKF2::getMagOffsets(Vector3f &magOffsets) const
+bool NavEKF2::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 {
     if (!core) {
         return false;
     }
-    return core[primary].getMagOffsets(magOffsets);
+    // try the primary first, else loop through all of the cores and return when one has offsets for this mag instance
+    if (core[primary].getMagOffsets(mag_idx, magOffsets)) {
+        return true;
+    }
+    for (uint8_t i=0; i<num_cores; i++) {
+        if(core[i].getMagOffsets(mag_idx, magOffsets)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // Return the last calculated latitude, longitude and height in WGS-84
@@ -769,18 +753,6 @@ bool NavEKF2::getOriginLLH(struct Location &loc) const
         return false;
     }
     return core[primary].getOriginLLH(loc);
-}
-
-// set the latitude and longitude and height used to set the NED origin
-// All NED positions calcualted by the filter will be relative to this location
-// The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
-// Returns false if the filter has rejected the attempt to set the origin
-bool NavEKF2::setOriginLLH(struct Location &loc)
-{
-    if (!core) {
-        return false;
-    }
-    return core[primary].setOriginLLH(loc);
 }
 
 // return estimated height above ground level
@@ -876,7 +848,9 @@ void NavEKF2::getFlowDebug(int8_t instance, float &varFlow, float &gndOffset, fl
 void NavEKF2::setTakeoffExpected(bool val)
 {
     if (core) {
-        core[primary].setTakeoffExpected(val);
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].setTakeoffExpected(val);
+        }
     }
 }
 
@@ -885,7 +859,9 @@ void NavEKF2::setTakeoffExpected(bool val)
 void NavEKF2::setTouchdownExpected(bool val)
 {
     if (core) {
-        core[primary].setTouchdownExpected(val);
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].setTouchdownExpected(val);
+        }
     }
 }
 

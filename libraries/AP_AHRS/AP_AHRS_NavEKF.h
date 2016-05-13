@@ -155,7 +155,7 @@ public:
 
     // get compass offset estimates
     // true if offsets are valid
-    bool getMagOffsets(Vector3f &magOffsets);
+    bool getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets);
 
     // report any reason for why the backend is refusing to initialise
     const char *prearm_failure_reason(void) const override;
@@ -177,7 +177,7 @@ public:
     // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
     // Returns true if the height datum reset has been performed
     // If using a range finder for height no reset is performed and it returns false
-    bool resetHeightDatum(void);
+    void resetHeightDatum(void);
 
     // send a EKF_STATUS_REPORT for current EKF
     void send_ekf_status_report(mavlink_channel_t chan);
@@ -207,6 +207,8 @@ public:
     void setTouchdownExpected(bool val);
 
     bool getGpsGlitchStatus();
+
+    void getPosVelInnovations(Vector3f& velInnov, Vector3f& posInnov);
 
 private:
     enum EKF_TYPE {EKF_TYPE_NONE=0,

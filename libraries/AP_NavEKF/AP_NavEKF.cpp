@@ -402,6 +402,14 @@ const AP_Param::GroupInfo NavEKF::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("GPS_CHECK",    33, NavEKF, _gpsCheck, 31),
 
+    // @Param: CHECK_SCALE
+    // @DisplayName: GPS accuracy check scaler (%)
+    // @Description: This scales the thresholds that are used to check GPS accuracy before it is used by the EKF. A value of 100 is the default. Values greater than 100 increase and values less than 100 reduce the maximum GPS error the EKF will accept. A value of 200 will double the allowable GPS error.
+    // @Range: 50 200
+    // @User: Advanced
+    // @Units: %
+    AP_GROUPINFO("CHECK_SCALE", 35, NavEKF, _gpsCheckScaler, 100),
+
     AP_GROUPEND
 };
 
@@ -528,12 +536,11 @@ void NavEKF::resetGyroBias(void)
 // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
 // Returns true if the height datum reset has been performed
 // If using a range finder for height no reset is performed and it returns false
-bool NavEKF::resetHeightDatum(void)
+void NavEKF::resetHeightDatum(void)
 {
-    if (!core) {
-        return false;
+    if (core) {
+        core->resetHeightDatum();
     }
-    return core->resetHeightDatum();
 }
 
 // Commands the EKF to not use GPS.
@@ -600,12 +607,12 @@ void NavEKF::getMagXYZ(Vector3f &magXYZ) const
 
 // Return estimated magnetometer offsets
 // Return true if magnetometer offsets are valid
-bool NavEKF::getMagOffsets(Vector3f &magOffsets) const
+bool NavEKF::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 {
     if (!core) {
         return false;
     }
-    return core->getMagOffsets(magOffsets);
+    return core->getMagOffsets(mag_idx, magOffsets);
 }
 
 // Return the last calculated latitude, longitude and height in WGS-84
@@ -629,18 +636,6 @@ bool NavEKF::getOriginLLH(struct Location &loc) const
         return false;
     }
     return core->getOriginLLH(loc);
-}
-
-// set the latitude and longitude and height used to set the NED origin
-// All NED positions calcualted by the filter will be relative to this location
-// The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
-// Returns false if the filter has rejected the attempt to set the origin
-bool NavEKF::setOriginLLH(struct Location &loc)
-{
-    if (!core) {
-        return false;
-    }
-    return core->setOriginLLH(loc);
 }
 
 // return estimated height above ground level

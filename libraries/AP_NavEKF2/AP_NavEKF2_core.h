@@ -101,7 +101,7 @@ public:
     // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
     // Returns true if the height datum reset has been performed
     // If using a range finder for height no reset is performed and it returns false
-    bool resetHeightDatum(void);
+    void resetHeightDatum(void);
 
     // Commands the EKF to not use GPS.
     // This command must be sent prior to arming as it will only be actioned when the filter is in static mode
@@ -132,7 +132,7 @@ public:
 
     // Return estimated magnetometer offsets
     // Return true if magnetometer offsets are valid
-    bool getMagOffsets(Vector3f &magOffsets) const;
+    bool getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const;
 
     // Return the last calculated latitude, longitude and height in WGS-84
     // If a calculated location isn't available, return a raw GPS measurement
@@ -144,12 +144,6 @@ public:
     // All NED positions calculated by the filter are relative to this location
     // Returns false if the origin has not been set
     bool getOriginLLH(struct Location &loc) const;
-
-    // set the latitude and longitude and height used to set the NED origin
-    // All NED positions calcualted by the filter will be relative to this location
-    // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
-    // Returns false if the filter has rejected the attempt to set the origin
-    bool setOriginLLH(struct Location &loc);
 
     // return estimated height above ground level
     // return false if ground height is not being estimated.
@@ -692,7 +686,7 @@ private:
     Vector24 processNoise;          // process noise added to diagonals of predicted covariance matrix
     Vector25 SF;                    // intermediate variables used to calculate predicted covariance matrix
     Vector5 SG;                     // intermediate variables used to calculate predicted covariance matrix
-    Vector8 SQ;                     // intermediate variables used to calculate predicted covariance matrix
+    Vector10 SQ;                    // intermediate variables used to calculate predicted covariance matrix
     Vector23 SPP;                   // intermediate variables used to calculate predicted covariance matrix
     Vector2f lastKnownPositionNE;   // last known position
     uint32_t lastDecayTime_ms;      // time of last decay of GPS position offset
@@ -775,7 +769,9 @@ private:
     uint32_t framesSincePredict;    // number of frames lapsed since EKF instance did a state prediction
     bool startPredictEnabled;       // boolean true when the frontend has given permission to start a new state prediciton cycele
     uint8_t localFilterTimeStep_ms; // average number of msec between filter updates
-    float posDownObsNoise;          // observationn noise on the vertical position used by the state and covariance update step (m)
+    float posDownObsNoise;          // observation noise on the vertical position used by the state and covariance update step (m)
+    float referenceYawAngle;        // Euler yaw angle measured at takeoff and after a yaw reset (rad)
+    float posdAtLastYawReset;       // Verticl position at last height reset (m)
 
     // variables used to calulate a vertical velocity that is kinematically consistent with the verical position
     float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.

@@ -100,7 +100,7 @@ public:
     // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
     // Returns true if the height datum reset has been performed
     // If using a range finder for height no reset is performed and it returns false
-    bool resetHeightDatum(void);
+    void resetHeightDatum(void);
 
     // Commands the EKF to not use GPS.
     // This command must be sent prior to arming as it will only be actioned when the filter is in static mode
@@ -131,7 +131,7 @@ public:
 
     // Return estimated magnetometer offsets
     // Return true if magnetometer offsets are valid
-    bool getMagOffsets(Vector3f &magOffsets) const;
+    bool getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const;
 
     // Return the last calculated latitude, longitude and height in WGS-84
     // If a calculated location isn't available, return a raw GPS measurement
@@ -143,12 +143,6 @@ public:
     // All NED positions calculated by the filter are relative to this location
     // Returns false if the origin has not been set
     bool getOriginLLH(struct Location &loc) const;
-
-    // set the latitude and longitude and height used to set the NED origin
-    // All NED positions calcualted by the filter will be relative to this location
-    // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
-    // Returns false if the filter has rejected the attempt to set the origin
-    bool setOriginLLH(struct Location &loc);
 
     // return estimated height above ground level
     // return false if ground height is not being estimated.
@@ -298,6 +292,7 @@ private:
     AP_Int8 _fallback;              // EKF-to-DCM fallback strictness. 0 = trust EKF more, 1 = fallback more conservatively.
     AP_Int8 _altSource;             // Primary alt source during optical flow navigation. 0 = use Baro, 1 = use range finder.
     AP_Int8 _gpsCheck;              // Bitmask controlling which preflight GPS checks are bypassed
+    AP_Int16 _gpsCheckScaler;       // Percentage increase to be applied to GPS pre-flight accuracy and drift thresholds
 
 };
 

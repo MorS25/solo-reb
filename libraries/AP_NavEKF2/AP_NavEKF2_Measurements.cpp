@@ -142,20 +142,6 @@ void NavEKF2_core::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRa
 *                      MAGNETOMETER                     *
 ********************************************************/
 
-// return magnetometer offsets
-// return true if offsets are valid
-bool NavEKF2_core::getMagOffsets(Vector3f &magOffsets) const
-{
-    // compass offsets are valid if we have finalised magnetic field initialisation and magnetic field learning is not prohibited and primary compass is valid
-    if (firstMagYawInit && (frontend->_magCal != 2) && _ahrs->get_compass()->healthy(magSelectIndex)) {
-        magOffsets = _ahrs->get_compass()->get_offsets(magSelectIndex) - stateStruct.body_magfield*1000.0f;
-        return true;
-    } else {
-        magOffsets = _ahrs->get_compass()->get_offsets(magSelectIndex);
-        return false;
-    }
-}
-
 // check for new magnetometer data and update store measurements if available
 void NavEKF2_core::readMagData()
 {
@@ -198,7 +184,8 @@ void NavEKF2_core::readMagData()
         }
 
         // detect changes to magnetometer offset parameters and reset states
-        Vector3f nowMagOffsets = _ahrs->get_compass()->get_offsets();
+        //Vector3f nowMagOffsets = _ahrs->get_compass()->get_offsets();
+        Vector3f nowMagOffsets = _ahrs->get_compass()->get_offsets(magSelectIndex);
         bool changeDetected = lastMagOffsetsValid && (!is_equal(nowMagOffsets.x,lastMagOffsets.x) || !is_equal(nowMagOffsets.y,lastMagOffsets.y) || !is_equal(nowMagOffsets.z,lastMagOffsets.z));
         if (changeDetected) {
             // zero the learned magnetometer bias states
@@ -410,10 +397,10 @@ void NavEKF2_core::readGpsData()
             if (PV_AidingMode != AID_ABSOLUTE) {
                 // Pre-alignment checks
                 gpsGoodToAlign = calcGpsGoodToAlign();
-            } else {
-                // Post-alignment checks
-                calcGpsGoodForFlight();
             }
+
+            // Post-alignment checks
+            calcGpsGoodForFlight();
 
             // Read the GPS locaton in WGS-84 lat,long,height coordinates
             const struct Location &gpsloc = _ahrs->get_gps().location();

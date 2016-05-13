@@ -918,16 +918,16 @@ void AP_AHRS_NavEKF::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVel
 
 // get compass offset estimates
 // true if offsets are valid
-bool AP_AHRS_NavEKF::getMagOffsets(Vector3f &magOffsets)
+bool AP_AHRS_NavEKF::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets)
 {
     switch (ekf_type()) {
     case 0:
     case 1:
     default:
-        return EKF1.getMagOffsets(magOffsets);
+        return EKF1.getMagOffsets(mag_idx, magOffsets);
 
     case 2:
-        return EKF2.getMagOffsets(magOffsets);
+        return EKF2.getMagOffsets(mag_idx, magOffsets);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL:
@@ -1007,21 +1007,15 @@ uint32_t AP_AHRS_NavEKF::getLastVelNorthEastReset(Vector2f &vel) const
 // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
 // Returns true if the height datum reset has been performed
 // If using a range finder for height no reset is performed and it returns false
-bool AP_AHRS_NavEKF::resetHeightDatum(void)
+void AP_AHRS_NavEKF::resetHeightDatum(void)
 {
     switch (ekf_type()) {
     case 1:
-        EKF2.resetHeightDatum();
-        return EKF1.resetHeightDatum();
     case 2:
         EKF1.resetHeightDatum();
-        return EKF2.resetHeightDatum();
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    case EKF_TYPE_SITL:
-        return false;
-#endif
+        EKF2.resetHeightDatum();
+        break;
     }
-    return false;
 }
 
 // send a EKF_STATUS_REPORT for current EKF
@@ -1191,6 +1185,30 @@ bool AP_AHRS_NavEKF::getGpsGlitchStatus()
     return ekf_status.flags.gps_glitching;
 }
 
+void AP_AHRS_NavEKF::getPosVelInnovations(Vector3f& velInnov, Vector3f& posInnov)
+{
+    switch (ekf_type()) {
+        case EKF_TYPE1: {
+            Vector3f magInnov;
+            float tasInnov;
+            EKF1.getInnovations(velInnov, posInnov, magInnov, tasInnov);
+            break;
+        }
+        case EKF_TYPE2: {
+            Vector3f magInnov;
+            float tasInnov;
+            float yawInnov;
+            EKF2.getInnovations(-1, velInnov, posInnov, magInnov, tasInnov, yawInnov);
+            break;
+        }
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        case EKF_TYPE_SITL:
+            posInnov.zero();
+            velInnov.zero();
+            break;
+#endif
+    }
+}
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE
 

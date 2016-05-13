@@ -44,6 +44,22 @@ void Copter::update_arming_checks(void)
     }
 }
 
+
+void Copter::update_ekf_innovation_check(void)
+{
+    const float dt = 1.0f/50.0f;
+    const float tc = 5.0f;
+    const float alpha = dt/(dt+tc);
+    Vector3f velInnov, posInnov;
+    ahrs.getPosVelInnovations(velInnov, posInnov);
+    velInnov.z = 0;
+    posInnov.z = 0;
+    ekf_innovation_peak = MAX(ekf_innovation_peak, posInnov.length()/0.55f);
+    ekf_innovation_peak = MAX(ekf_innovation_peak, velInnov.length()/0.7f);
+    ekf_innovation_peak = MIN(ekf_innovation_peak, 10.0f);
+    ekf_innovation_peak -= ekf_innovation_peak*alpha;
+}
+
 // performs pre-arm checks and arming checks
 bool Copter::all_arming_checks_passing(bool arming_from_gcs)
 {
@@ -258,12 +274,25 @@ bool Copter::pre_arm_checks(bool display_failure)
                     }
                     return false;
                 }
+                // EKF is less sensitive to Z-axis error and Z-axis is more
+                // likely to be temperature-sensitive on our hardware
+                vec_diff.z *= 0.5f;
                 if (vec_diff.length() > threshold) {
                     if (display_failure) {
                         gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: inconsistent Accelerometers");
                     }
                     return false;
                 }
+            }
+        }
+
+        // check lean angle
+        if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
+            if (degrees(acosf(ahrs.cos_roll()*ahrs.cos_pitch()))*100.0f > aparm.angle_max) {
+                if (display_failure) {
+                    gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Leaning");
+                }
+                return false;
             }
         }
 
@@ -484,9 +513,10 @@ bool Copter::pre_arm_gps_checks(bool display_failure)
     Vector3f mag_variance;
     Vector2f offset;
     ahrs.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance, offset);
-    if (mag_variance.length() >= g.fs_ekf_thresh) {
+    if (mag_variance.x>1.0f || mag_variance.y>1.0f || mag_variance.z>1.0f) {
         if (display_failure) {
             gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: inconsistent compasses");
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Waiting for Nav Checks");
         }
         return false;
     }
@@ -507,13 +537,13 @@ bool Copter::pre_arm_gps_checks(bool display_failure)
     }
 
     // warn about hdop separately - to prevent user confusion with no gps lock
-    if (gps.get_hdop() > g.gps_hdop_good) {
+    /*if (gps.get_hdop() > g.gps_hdop_good) {
         if (display_failure) {
             gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Need 3D Fix");
         }
         AP_Notify::flags.pre_arm_gps_check = false;
         return false;
-    }
+    }*/
 
     // if we got here all must be ok
     AP_Notify::flags.pre_arm_gps_check = true;
@@ -588,6 +618,16 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         if (!pre_arm_ekf_attitude_check()) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Waiting for Nav Checks");
+            }
+            return false;
+        }
+    }
+
+    // check lean angle
+    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
+        if (degrees(acosf(ahrs.cos_roll()*ahrs.cos_pitch()))*100.0f > aparm.angle_max) {
+            if (display_failure) {
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Leaning");
             }
             return false;
         }
@@ -676,16 +716,6 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     }
     #endif
 
-    // check lean angle
-    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
-        if (degrees(acosf(ahrs.cos_roll()*ahrs.cos_pitch()))*100.0f > aparm.angle_max) {
-            if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Leaning");
-            }
-            return false;
-        }
-    }
-
     // check battery voltage
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_VOLTAGE)) {
         if (failsafe.battery || (!ap.usb_connected && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah))) {
@@ -737,12 +767,15 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         }
     }
 
-    // check if safety switch has been pushed
     if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-        if (display_failure) {
-            gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Safety Switch");
+        if (!BoardConfig.get_safety_enable()) {
+            hal.rcout->force_safety_off();
+        } else {
+            if (display_failure) {
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Safety Switch");
+            }
+            return false;
         }
-        return false;
     }
 
     // if we've gotten this far all is ok

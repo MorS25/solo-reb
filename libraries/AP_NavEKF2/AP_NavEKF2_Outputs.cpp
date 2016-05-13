@@ -345,6 +345,20 @@ void NavEKF2_core::getMagXYZ(Vector3f &magXYZ) const
     magXYZ = stateStruct.body_magfield*1000.0f;
 }
 
+// return magnetometer offsets
+// return true if offsets are valid
+bool NavEKF2_core::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
+{
+    // compass offsets are valid if we have finalised magnetic field initialisation and magnetic field learning is not prohibited and primary compass is valid
+    if (mag_idx == magSelectIndex && firstMagYawInit && (frontend->_magCal != 2) && _ahrs->get_compass()->healthy(magSelectIndex)) {
+        magOffsets = _ahrs->get_compass()->get_offsets(magSelectIndex) - stateStruct.body_magfield*1000.0f;
+        return true;
+    } else {
+        magOffsets = _ahrs->get_compass()->get_offsets(magSelectIndex);
+        return false;
+    }
+}
+
 // return the index for the active magnetometer
 uint8_t NavEKF2_core::getActiveMag() const
 {
@@ -459,13 +473,13 @@ void  NavEKF2_core::getFilterStatus(nav_filter_status &status) const
     status.flags.vert_pos = !hgtTimeout && filterHealthy && !hgtNotAccurate; // vertical position estimate valid
     status.flags.terrain_alt = gndOffsetValid && filterHealthy;		// terrain height estimate valid
     status.flags.const_pos_mode = (PV_AidingMode == AID_NONE) && filterHealthy;     // constant position mode
-    status.flags.pred_horiz_pos_rel = (optFlowNavPossible || gpsNavPossible) && filterHealthy; // we should be able to estimate a relative position when we enter flight mode
-    status.flags.pred_horiz_pos_abs = gpsNavPossible && filterHealthy; // we should be able to estimate an absolute position when we enter flight mode
+    status.flags.pred_horiz_pos_rel = status.flags.horiz_pos_rel; // we should be able to estimate a relative position when we enter flight mode
+    status.flags.pred_horiz_pos_abs = status.flags.horiz_pos_abs; // we should be able to estimate an absolute position when we enter flight mode
     status.flags.takeoff_detected = takeOffDetected; // takeoff for optical flow navigation has been detected
     status.flags.takeoff = expectGndEffectTakeoff; // The EKF has been told to expect takeoff and is in a ground effect mitigation mode
     status.flags.touchdown = expectGndEffectTouchdown; // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
     status.flags.using_gps = (imuSampleTime_ms - lastPosPassTime_ms) < 4000;
-    status.flags.gps_glitching = !gpsAccuracyGood; // The GPS is glitching
+    status.flags.gps_glitching = status.flags.using_gps && !gpsAccuracyGood; // The GPS is glitching
 }
 
 /*
@@ -526,6 +540,9 @@ void NavEKF2_core::send_status_report(mavlink_channel_t chan)
     }
     if (filt_state.flags.pred_horiz_pos_abs) {
         flags |= EKF_PRED_POS_HORIZ_ABS;
+    }
+    if (filt_state.flags.gps_glitching) {
+        flags |= (1<<15);
     }
 
     // get variances
