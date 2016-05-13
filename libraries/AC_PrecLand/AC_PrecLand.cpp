@@ -178,8 +178,8 @@ void AC_PrecLand::calc_angles_and_pos(float alt_above_terrain_cm)
     _ef_angle_to_target.x = y_rad*_ahrs.cos_yaw() - x_rad*_ahrs.sin_yaw();
     _ef_angle_to_target.y = y_rad*_ahrs.sin_yaw() + x_rad*_ahrs.cos_yaw();
 
-    // get current altitude (constrained to no lower than 50cm)
-    float alt = MAX(alt_above_terrain_cm, 50.0f);
+    // get current altitude (constrained to no lower than 5cm)
+    float alt = MAX(alt_above_terrain_cm, 5.0f);
 
     // convert earth-frame angles to earth-frame position offset
     _target_pos_offset.x = alt*tanf(_ef_angle_to_target.x);
@@ -187,6 +187,39 @@ void AC_PrecLand::calc_angles_and_pos(float alt_above_terrain_cm)
     _target_pos_offset.z = 0;  // not used
 
     _have_estimate = true;
+}
+
+// calc_angles_and_pos - converts sensor's body-frame angles to earth-frame angles and position estimate
+//  body-frame angles stored in _bf_angle_to_target
+//  earth-frame angles stored in _ef_angle_to_target
+//  position estimate is stored in _target_pos
+Vector3f AC_PrecLand::report_angles_and_pos(float alt_above_terrain_cm)
+{
+    Vector3f offset_report; // default initialised to zero
+
+    // do not shift target if not enabled or no position estimate
+    //if (_backend == NULL || !_have_estimate) {
+    //    return offset_report;
+    //}
+
+    /*
+    // exit immediately if not enabled
+    if (_backend == NULL) {
+        _have_estimate = false;
+        return offset_report;
+    }
+    // get body-frame angles to target from backend
+    if (!_backend->get_angle_to_target(_bf_angle_to_target.x, _bf_angle_to_target.y)) {
+        _have_estimate = false;
+        return offset_report;
+    }
+    */
+
+    offset_report.x = _target_pos_offset.x;
+    offset_report.y = _target_pos_offset.y;
+    offset_report.z = 0;  // not used
+    //_have_estimate = true;
+    return offset_report;
 }
 
 // handle_msg - Process a LANDING_TARGET mavlink message
