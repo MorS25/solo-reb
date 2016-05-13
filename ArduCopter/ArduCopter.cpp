@@ -336,6 +336,7 @@ void Copter::throttle_loop()
 #endif // GNDEFFECT_COMPENSATION == ENABLED
 
     failsafe_gps_glitch_check();
+
     update_ekf_innovation_check();
 }
 
