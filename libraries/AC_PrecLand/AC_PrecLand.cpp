@@ -222,6 +222,22 @@ Vector3f AC_PrecLand::report_angles_and_pos(float alt_above_terrain_cm)
     return offset_report;
 }
 
+bool AC_PrecLand::have_ang_estimate()
+{
+    // exit immediately if not enabled
+    if (_backend == NULL) {
+        return false;
+    }
+
+    // get angles to target from backend
+    float ang_x, ang_y;
+    if (!_backend->get_angle_to_target(ang_x, ang_y)) {
+        return true;
+    }
+
+    return false;
+}
+
 // handle_msg - Process a LANDING_TARGET mavlink message
 void AC_PrecLand::handle_msg(mavlink_message_t* msg)
 {
