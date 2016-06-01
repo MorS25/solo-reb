@@ -64,6 +64,8 @@ public:
     //  position estimate is stored in _target_pos
     Vector3f report_angles_and_pos(float alt_above_terrain_cm);
 
+    virtual bool have_ang_estimate();
+
     // handle_msg - Process a LANDING_TARGET mavlink message
     void handle_msg(mavlink_message_t* msg);
 

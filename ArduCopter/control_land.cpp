@@ -6,8 +6,8 @@ static bool land_with_gps;
 
 static uint32_t land_start_time;
 static bool land_pause;
-
 static Vector3f offset_check;
+int16_t missed_frame_count = 0;
 
 // land_init - initialise land controller
 bool Copter::land_init(mode_reason_t reason, bool ignore_checks)
@@ -60,15 +60,19 @@ void Copter::land_gps_run()
     int16_t roll_control = 0, pitch_control = 0;
     float target_yaw_rate = 0;
 
-    int16_t thresh_offset = 10; //alt sensor offset from ground in cm
-    int16_t thresh_alt_1 = 1; //alt thresholds in cm
-    int16_t thresh_alt_2 = 100 + thresh_offset;
-    int16_t thresh_alt_3 = 200 + thresh_offset;
-    int16_t thresh_alt_4 = 300 + thresh_offset;
-    float thresh_pos_1 = 10.0f; //position offset bounds in cm
-    float thresh_pos_2 = 25.0f;
-    float thresh_pos_3 = 35.0f;
-    bool thresh_pos_flag = true; // are we in the pos range, when in the alt range for checking (set to false, if not)
+    int16_t thresh_alt_1 = 10; //alt thresholds in cm
+    int16_t thresh_alt_2 = 100;
+    int16_t thresh_alt_3 = 200;
+    int16_t thresh_alt_4 = 300;
+    float thresh_pos_12 = 10.0f; //position offset bounds in cm
+    float thresh_pos_23 = 25.0f;
+    float thresh_pos_34 = 35.0f;
+    bool thresh_pos_flag = true; // we are w/in the error bound (set to false, if not)
+    float vel_limit = 20.0f;
+    bool thresh_vel_flag = true;
+    int16_t missed_frame_limit = 20;
+    bool thresh_time_flag = true;
+    bool safe_precland = true;
 
     // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
     if(!ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
@@ -135,23 +139,51 @@ void Copter::land_gps_run()
     // run precision landing
     if (!ap.land_repo_active) {
         wp_nav.shift_loiter_target(precland.get_target_shift(wp_nav.get_loiter_target()));
-
         offset_check = precland.report_angles_and_pos(sonar_alt);
         float max_offset = MAX(abs(offset_check.x),abs(offset_check.y));
         if (sonar_alt>thresh_alt_1 && sonar_alt<thresh_alt_2) {
-        	if (max_offset>thresh_pos_1) {
-        		thresh_pos_flag = false;
-        	}
+          if (max_offset>thresh_pos_12) {
+              thresh_pos_flag = false;
+          }
         }
         if (sonar_alt>thresh_alt_2 && sonar_alt<thresh_alt_3) {
-           	if (max_offset>thresh_pos_2) {
-           		thresh_pos_flag = false;
-           	}
+          if (max_offset>thresh_pos_23) {
+              thresh_pos_flag = false;
+          }
         }
         if (sonar_alt>thresh_alt_3 && sonar_alt<thresh_alt_4) {
-           	if (max_offset>thresh_pos_3) {
-           		thresh_pos_flag = false;
-          	}
+          if (max_offset>thresh_pos_34) {
+              thresh_pos_flag = false;
+          }
+        }
+
+        const Vector3f& vel = inertial_nav.get_velocity(); // get current velocity, vel.x vel.y
+        // float vel_scal = safe_sqrt(vel.x*vel.x + vel.y*vel.y);
+        if (sonar_alt>thresh_alt_1 && sonar_alt<thresh_alt_2) {
+            if (vel.x<vel_limit || vel.y<vel_limit) {
+                thresh_vel_flag = true;
+            } else {
+                thresh_vel_flag = false;
+            }
+        }
+
+        //To-do: ascend if target missed for certain time
+        float ang_x, ang_y;
+        if (precland.have_ang_estimate()) {
+            missed_frame_count = 0;
+        } else {
+            missed_frame_count++;
+        }
+        if (missed_frame_count<missed_frame_limit) {
+            thresh_time_flag = true;
+        } else{
+            thresh_time_flag = false;
+        }
+
+        if (thresh_pos_flag && thresh_vel_flag && thresh_time_flag) {
+            safe_precland = true;
+        } else {
+            safe_precland = false;
         }
     }
 #endif
@@ -172,16 +204,16 @@ void Copter::land_gps_run()
     }
 
     // update altitude target and call position controller
-    if (thresh_pos_flag==true){
-    	pos_control.set_alt_target_from_climb_rate(cmb_rate, G_Dt, true);
-    	// record desired climb rate for logging
-    	desired_climb_rate = cmb_rate;
+    if (safe_precland==true){
+      pos_control.set_alt_target_from_climb_rate(cmb_rate, G_Dt, true);
+      // record desired climb rate for logging
+      desired_climb_rate = cmb_rate;
     } else {
-    	//cmb_rate = 50.0f;
-    	pos_control.set_alt_target_from_climb_rate(cmb_rate, G_Dt, false);
-    	//pos_control.add_takeoff_climb_rate(takeoff_climb_rate, G_Dt);
-    	// record desired climb rate for logging
-    	desired_climb_rate = -2*cmb_rate;
+      //cmb_rate = 50.0f;
+      pos_control.set_alt_target_from_climb_rate(cmb_rate, G_Dt, false);
+      //pos_control.add_takeoff_climb_rate(takeoff_climb_rate, G_Dt);
+      // record desired climb rate for logging
+      desired_climb_rate = -2*cmb_rate;
     }
     pos_control.update_z_controller();
 }
